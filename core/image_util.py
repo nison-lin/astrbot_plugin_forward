@@ -45,13 +45,16 @@ class ImageUtil:
 
         # 逐一检查图片有效性，并构造url列表
         image_urls = []
+        temp_files = []
         for image in images:
             if not image.file and not image.url and not image.path:
                 continue
             path = image.path or await image.convert_to_file_path()
             if path:
                 if await self.get_image_format(path) != "不是图片":
-                    image_urls.append(await self.process_image(path))
+                    processed, temps = await self.process_image(path)
+                    image_urls.append(processed)
+                    temp_files.extend(temps)
                     continue
             if image.file:
                 if image.file.startswith("data:image") or image.file.startswith("base64://"):
@@ -59,12 +62,19 @@ class ImageUtil:
                     continue
         if not image_urls:
             return False
-                
-        # 调用ai
-        response = await llm.image_think(
-                prompt=image_prompt.format(prompt=self.prompt),
-                image_urls=image_urls
-            )
+
+        # 调用ai，随后删除临时文件
+        try:
+            response = await llm.image_think(
+                    prompt=image_prompt.format(prompt=self.prompt),
+                    image_urls=image_urls
+                )
+        finally:
+            for temp in temp_files:
+                try:
+                    os.remove(temp)
+                except OSError:
+                    pass
         if "是" == response.strip():
             return True
         else:
@@ -114,9 +124,17 @@ class ImageUtil:
         return output_path
 
 
-    # 对图片进行尺寸缩放和大小压缩
-    async def process_image(self, path: str) -> str:
-        img = ima.open(path).convert("RGB")
-        path, img = await self.resize_image(path, img)
-        path = await self.compress_image(path, img)
-        return path
+    # 对图片进行尺寸缩放和大小压缩，返回最终路径和所有生成的临时文件列表
+    async def process_image(self, original_path: str) -> tuple[str, list[str]]:
+        img = ima.open(original_path).convert("RGB")
+        temp_files = []
+
+        resized_path, img = await self.resize_image(original_path, img)
+        if resized_path != original_path:
+            temp_files.append(resized_path)
+
+        compressed_path = await self.compress_image(resized_path, img)
+        if compressed_path != resized_path:
+            temp_files.append(compressed_path)
+
+        return compressed_path, temp_files
