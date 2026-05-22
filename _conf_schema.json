@@ -1,0 +1,79 @@
+{
+    "from_group_ids": {
+        "description": "要监测的群号",
+        "type": "string",
+        "hint": "若有多个群，则用英文逗号隔开。例:137304532,1106585797,1091939670"
+    },
+    "target_group_ids": {
+        "description": "转发到的群号",
+        "type": "string",
+        "hint": "若有多个群，则用英文逗号隔开。例:137304532,1106585797,1091939670"
+    },
+    "text": {
+        "description": "纯文本转发",
+        "type": "object",
+        "items": {
+            "enable": {
+                "description": "开启纯文本转发",
+                "type": "bool",
+                "hint": "开启后，当出现满足下列条件的纯文本消息时，会触发bot的转发行为。若此项为否，则无需填写下列参数"
+            },
+            "auto_regex": {
+                "description": "匹配文本的正则表达式",
+                "type": "string",
+                "hint": "若希望bot不借助ai，自动识别消息并转发，请填写此参数，并留空下面那项参数"
+            },
+            "ai_prompt": {
+                "description": "匹配文本的ai提示词",
+                "type": "text",
+                "hint": "若希望bot依靠ai来判断该不该转发某条消息，请填写此参数，并留空上面那项参数。例：我想匹配ai行业的新闻。"
+            }
+        }
+    },
+    "image": {
+        "description": "图片转发",
+        "type": "object",
+        "hint": "配置的默认对话模型须具有图片识别功能",
+        "items": {
+            "enable": {
+                "description": "开启图片转发",
+                "type": "bool",
+                "hint": "开启后，当出现满足下列条件的图片消息时，会触发bot的转发行为。若此项为否，则无需填写下列参数"
+            },
+            "ai_prompt": {
+                "description": "匹配图片的ai提示词",
+                "type": "text",
+                "hint": "例：我想匹配可爱的美少女图片"
+            },
+            "max_size_kb": {
+                "description": "图片大小上限",
+                "type": "int",
+                "hint": "单位为KB。大小超过上限的图片将被压缩后传给模型进行识别（若填0则不开启本功能）",
+                "default": 500
+            },
+            "max_dimension": {
+                "description": "图片尺寸上限",
+                "type": "int",
+                "hint": "单位为像素。尺寸超过上限的图片将被压缩后传给模型进行识别（若填0则不开启本功能）",
+                "default": 2048
+            }
+        }
+    },
+    "log": {
+        "description": "日志",
+        "type": "object",
+        "items": {
+            "enable": {
+                "description": "开启日志记录",
+                "type": "bool",
+                "hint": "默认在data\\plugin_data\\astrbot_plugin_auto_forward目录下",
+                "default": true
+            },
+            "path": {
+                "description": "日志记录位置",
+                "type": "string",
+                "hint": "如需自定义日志所在的位置，在此填写。例：C:\\Users\\nison\\Desktop\\log.txt"
+            }
+        }
+    }
+}
