@@ -22,9 +22,18 @@ text_prompt = """你是一个识别消息内容的助手，请根据消息内容
 
 
 class PlainUtil:
-    def __init__(self, regex: str = "", prompt: str = ""):
+    def __init__(self, key_word: str = "", regex: str = "", prompt: str = ""):
         self.regex = regex
         self.prompt = prompt
+        self.key_word = key_word
+
+    # 关键词匹配文本
+    async def key_word_plain_check(self, plain: str):
+        if not plain or not self.key_word:
+            return False
+        if self.key_word in plain:
+            return True
+        return False
 
     # 正则表达式匹配文本
     async def regex_plain_check(self, plain: str):

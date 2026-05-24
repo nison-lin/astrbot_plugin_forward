@@ -19,6 +19,7 @@ class ForwardPlugin(Star):
         self.target_group_ids = config.get("target_group_ids", "")
         self.from_group_ids = config.get("from_group_ids", "")
         self.text_enable = config.get("text", {}).get("enable", False)
+        self.text_key_word = config.get("text", {}).get("key_word", "")
         self.text_auto_regex = config.get("text", {}).get("auto_regex", "")
         self.text_ai_prompt = config.get("text", {}).get("ai_prompt", "")
         self.image_enable = config.get("image", {}).get("enable", False)
@@ -30,7 +31,9 @@ class ForwardPlugin(Star):
         # 创建工具类
         self.log_util = LogUtil(log_enable=self.log_enable, log_path=self.log_path)
         self.plain_util = PlainUtil(
-            regex=self.text_auto_regex, prompt=self.text_ai_prompt
+            key_word=self.text_key_word,
+            regex=self.text_auto_regex,
+            prompt=self.text_ai_prompt
         )
         self.image_util = ImageUtil(
             max_size_kb=self.image_max_size_kb,
@@ -93,9 +96,16 @@ class ForwardPlugin(Star):
             if not isinstance(message, Plain):
                 return
         result = False
-        if self.text_auto_regex:
-            result = await self.plain_util.regex_plain_check(
+        if self.text_key_word:
+            result = await self.plain_util.key_word_plain_check(
                 plain=event.get_message_str()
+            )
+        if self.text_auto_regex:
+            result = (
+                await self.plain_util.regex_plain_check(
+                    plain=event.get_message_str()
+                )
+                or result
             )
         if self.text_ai_prompt and llm:
             result = (
@@ -105,6 +115,7 @@ class ForwardPlugin(Star):
                 or result
             )
         if result:
+            await self.log_util.log("[文本] 识别到结果，已转发")
             async for r in self.forward(messages=messages, event=event):
                 yield r
 
@@ -121,7 +132,8 @@ class ForwardPlugin(Star):
             result = await self.image_util.ai_image_check(
                 images=images, llm=llm, event=event
             )
-        if result:
+        if result:  
+            await self.log_util.log("[图片] 识别到结果，已转发")
             async for r in self.forward(messages=messages, event=event):
                 yield r
 
@@ -129,7 +141,6 @@ class ForwardPlugin(Star):
     async def forward(self, messages: list, event: AstrMessageEvent):
         if not self.target_group_ids:
             return
-        await self.log_util.log("识别到结果，已转发")
         target_group_id_list = ""
         if "," in self.target_group_ids:
             target_group_id_list = self.target_group_ids.strip().split(",")
