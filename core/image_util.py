@@ -29,16 +29,17 @@ class ImageUtil:
         self.prompt = prompt
         self.max_dimension = max_dimension
 
-
     # ai匹配图片
-    async def ai_image_check(self, images: list[Image], llm: LLMClient, event: AstrMessageEvent):
+    async def ai_image_check(
+        self, images: list[Image], llm: LLMClient, event: AstrMessageEvent
+    ):
         # 排除表情包
         try:
             raw_msg = event.message_obj.raw_message.get("raw_message")
             if not raw_msg:
                 return False
-            cq_codes = re.findall(r'\[CQ:image[^\]]*\]', raw_msg)
-            zero_indices = [i for i, cq in enumerate(cq_codes) if 'sub_type=0' in cq]
+            cq_codes = re.findall(r"\[CQ:image[^\]]*\]", raw_msg)
+            zero_indices = [i for i, cq in enumerate(cq_codes) if "sub_type=0" in cq]
             images = [image for i, image in enumerate(images) if i in zero_indices]
         except Exception:
             pass
@@ -57,7 +58,9 @@ class ImageUtil:
                     temp_files.extend(temps)
                     continue
             if image.file:
-                if image.file.startswith("data:image") or image.file.startswith("base64://"):
+                if image.file.startswith("data:image") or image.file.startswith(
+                    "base64://"
+                ):
                     image_urls.append(image.file)
                     continue
         if not image_urls:
@@ -66,9 +69,8 @@ class ImageUtil:
         # 调用ai，随后删除临时文件
         try:
             response = await llm.image_think(
-                    prompt=image_prompt.format(prompt=self.prompt),
-                    image_urls=image_urls
-                )
+                prompt=image_prompt.format(prompt=self.prompt), image_urls=image_urls
+            )
         finally:
             for temp in temp_files:
                 try:
@@ -80,18 +82,16 @@ class ImageUtil:
         else:
             return False
 
-
     # 判断图片类型
     async def get_image_format(self, url_or_path: str) -> str:
-        if url_or_path.endswith('.jpg') or url_or_path.endswith('.jpeg'):
-            return 'jpg'
-        elif url_or_path.endswith('.png'):
-            return 'png'
-        elif url_or_path.endswith('.webp'):
-            return 'webp'
+        if url_or_path.endswith(".jpg") or url_or_path.endswith(".jpeg"):
+            return "jpg"
+        elif url_or_path.endswith(".png"):
+            return "png"
+        elif url_or_path.endswith(".webp"):
+            return "webp"
         else:
-            return '不是图片'
-
+            return "不是图片"
 
     # 如果尺寸超过 max_dimension，缩放后保存为新文件并返回新路径
     async def resize_image(self, path: str, img: ima.Image) -> tuple[str, ima.Image]:
@@ -107,7 +107,6 @@ class ImageUtil:
         img.save(output_path, "JPEG", quality=85, optimize=True)
         return output_path, img
 
-
     # 如果文件大小超过 max_size_kb，压缩质量后保存为新文件并返回新路径
     async def compress_image(self, path: str, img: ima.Image) -> str:
         if self.max_size_kb <= 0:
@@ -122,7 +121,6 @@ class ImageUtil:
             quality -= 10
             img.save(output_path, "JPEG", quality=quality, optimize=True)
         return output_path
-
 
     # 对图片进行尺寸缩放和大小压缩，返回最终路径和所有生成的临时文件列表
     async def process_image(self, original_path: str) -> tuple[str, list[str]]:

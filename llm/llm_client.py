@@ -8,7 +8,6 @@ class LLMClient:
         self.provider_id = provider_id
         self.context = context
 
-
     @classmethod
     async def create(cls, context: Context, event: AstrMessageEvent):
         umo = event.unified_msg_origin
@@ -21,7 +20,6 @@ class LLMClient:
         else:
             return None
 
-
     # 调用文本LLM
     async def text_think(self, prompt: str, system_prompt: str = ""):
         if not self.provider_id or not prompt:
@@ -31,18 +29,16 @@ class LLMClient:
             llm_resp = await self.context.llm_generate(
                 chat_provider_id=self.provider_id,
                 prompt=prompt,
-                system_prompt=system_prompt
+                system_prompt=system_prompt,
             )
         else:
             llm_resp = await self.context.llm_generate(
-                chat_provider_id=self.provider_id,
-                prompt=prompt
+                chat_provider_id=self.provider_id, prompt=prompt
             )
         if llm_resp:
             return llm_resp.completion_text
         else:
             return ""
-    
 
     # 调用图片LLM
     async def image_think(self, prompt: str, image_urls: list[str]):
@@ -50,10 +46,8 @@ class LLMClient:
             return ""
         llm_resp = None
         llm_resp = await self.context.llm_generate(
-                chat_provider_id=self.provider_id,
-                prompt=prompt,
-                image_urls=image_urls
-            )
+            chat_provider_id=self.provider_id, prompt=prompt, image_urls=image_urls
+        )
         if llm_resp:
             return llm_resp.completion_text
         else:

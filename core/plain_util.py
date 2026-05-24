@@ -26,7 +26,6 @@ class PlainUtil:
         self.regex = regex
         self.prompt = prompt
 
-
     # 正则表达式匹配文本
     async def regex_plain_check(self, plain: str):
         if not plain or not self.regex:
@@ -35,14 +34,13 @@ class PlainUtil:
             return True
         return False
 
-        
     # ai匹配文本
     async def ai_plain_check(self, plain: str, llm: LLMClient):
         if not self.prompt or not plain:
             return False
         response = await llm.text_think(
-                prompt=text_prompt.format(prompt=self.prompt, plain=plain)
-            )
+            prompt=text_prompt.format(prompt=self.prompt, plain=plain)
+        )
         if "是" == response.strip():
             return True
         else:

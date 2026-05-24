@@ -12,35 +12,31 @@ from .llm.llm_client import LLMClient
 
 class ForwardPlugin(Star):
     context: Context
+
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         # 传入参数
-        self.target_group_ids = config.get("target_group_ids","")
-        self.from_group_ids = config.get("from_group_ids","")
-        self.text_enable = config.get("text",{}).get("enable",False)
-        self.text_auto_regex = config.get("text",{}).get("auto_regex","")
-        self.text_ai_prompt = config.get("text",{}).get("ai_prompt","")
-        self.image_enable = config.get("image",{}).get("enable",False)
-        self.image_ai_prompt = config.get("image",{}).get("ai_prompt","")
-        self.image_max_size_kb = config.get("image",{}).get("max_size_kb",0)
-        self.image_max_dimension = config.get("image",{}).get("max_dimension",0)
-        self.log_enable = config.get("log",{}).get("enable",True)
-        self.log_path = config.get("log",{}).get("path","")
+        self.target_group_ids = config.get("target_group_ids", "")
+        self.from_group_ids = config.get("from_group_ids", "")
+        self.text_enable = config.get("text", {}).get("enable", False)
+        self.text_auto_regex = config.get("text", {}).get("auto_regex", "")
+        self.text_ai_prompt = config.get("text", {}).get("ai_prompt", "")
+        self.image_enable = config.get("image", {}).get("enable", False)
+        self.image_ai_prompt = config.get("image", {}).get("ai_prompt", "")
+        self.image_max_size_kb = config.get("image", {}).get("max_size_kb", 0)
+        self.image_max_dimension = config.get("image", {}).get("max_dimension", 0)
+        self.log_enable = config.get("log", {}).get("enable", True)
+        self.log_path = config.get("log", {}).get("path", "")
         # 创建工具类
-        self.log_util = LogUtil(
-            log_enable=self.log_enable, 
-            log_path=self.log_path
-        )
+        self.log_util = LogUtil(log_enable=self.log_enable, log_path=self.log_path)
         self.plain_util = PlainUtil(
-            regex=self.text_auto_regex, 
-            prompt=self.text_ai_prompt
+            regex=self.text_auto_regex, prompt=self.text_ai_prompt
         )
         self.image_util = ImageUtil(
-            max_size_kb=self.image_max_size_kb, 
-            max_dimension=self.image_max_dimension, 
-            prompt=self.image_ai_prompt
+            max_size_kb=self.image_max_size_kb,
+            max_dimension=self.image_max_dimension,
+            prompt=self.image_ai_prompt,
         )
-
 
     # 监听所有消息
     @filter.event_message_type(filter.EventMessageType.ALL)
@@ -49,7 +45,7 @@ class ForwardPlugin(Star):
             # 禁止默认的LLM请求
             event.should_call_llm(True)
 
-            #检查消息来源
+            # 检查消息来源
             if not await self.from_check(event=event):
                 return
 
@@ -64,7 +60,9 @@ class ForwardPlugin(Star):
                 async for r in self.text_check(messages=messages, event=event, llm=llm):
                     yield r
             if self.image_enable:
-                async for r in self.image_check(messages=messages, event=event, llm=llm):
+                async for r in self.image_check(
+                    messages=messages, event=event, llm=llm
+                ):
                     yield r
         except Exception as e:
             try:
@@ -72,8 +70,7 @@ class ForwardPlugin(Star):
             except Exception:
                 logger.error(f"[auto_forward] {e}")
 
-
-    #检查消息来源，只监测指定群聊
+    # 检查消息来源，只监测指定群聊
     async def from_check(self, event: AstrMessageEvent):
         if not self.from_group_ids:
             return False
@@ -88,9 +85,10 @@ class ForwardPlugin(Star):
             return False
         return True
 
-
     # 纯文本监测
-    async def text_check(self, messages: list, event: AstrMessageEvent, llm: LLMClient | None):
+    async def text_check(
+        self, messages: list, event: AstrMessageEvent, llm: LLMClient | None
+    ):
         for message in messages:
             if not isinstance(message, Plain):
                 return
@@ -100,17 +98,20 @@ class ForwardPlugin(Star):
                 plain=event.get_message_str()
             )
         if self.text_ai_prompt and llm:
-            result = await self.plain_util.ai_plain_check(
-                plain=event.get_message_str(),
-                llm=llm
-            ) or result
+            result = (
+                await self.plain_util.ai_plain_check(
+                    plain=event.get_message_str(), llm=llm
+                )
+                or result
+            )
         if result:
             async for r in self.forward(messages=messages, event=event):
                 yield r
 
-
     # 图片监测
-    async def image_check(self, messages: list, event: AstrMessageEvent, llm: LLMClient | None):
+    async def image_check(
+        self, messages: list, event: AstrMessageEvent, llm: LLMClient | None
+    ):
         images = []
         for message in messages:
             if isinstance(message, Image):
@@ -118,14 +119,11 @@ class ForwardPlugin(Star):
         result = False
         if self.image_ai_prompt and llm:
             result = await self.image_util.ai_image_check(
-                images=images,
-                llm=llm,
-                event=event
+                images=images, llm=llm, event=event
             )
         if result:
             async for r in self.forward(messages=messages, event=event):
                 yield r
-
 
     # 转发
     async def forward(self, messages: list, event: AstrMessageEvent):
